@@ -1,0 +1,8 @@
+# Ignorar la carpeta Diseño
+Diseño/
+
+# Ignorar todos los archivos con extensión .pdf
+*.pdf
+
+# Ignorar todos los archivos con extensión .html
+*.html
