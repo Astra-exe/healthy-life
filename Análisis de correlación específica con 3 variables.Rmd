@@ -1,0 +1,67 @@
+---
+title: "Hipótesis de correlación espécifica de 3 variables"
+output: html_notebook
+---
+
+**Hipótesis**: Existe una correlación significativa entre el consumo diario de agua (CH2O) y el uso de tecnología (TUE) con el nivel de obesidad (NObeyesdad) de los individuos.
+
+Para probar esta hipótesis, realizaré un análisis utilizando el lenguaje R, enfocándome en estas variables y creando gráficas y un mapa de calor para visualizar las correlaciones. Comenzaré cargando y examinando el conjunto de datos.
+
+El conjunto de datos contiene varias columnas, incluyendo las de interés para nuestra hipótesis: 'CH2O' (consumo de agua diario), 'TUE' (tiempo de uso de tecnología), y 'NObeyesdad' (nivel de obesidad). Además, observo una columna 'IMC', que podría ser relevante para análisis adicionales.
+
+Procederé a realizar el análisis en R. Primero, exploraré la distribución de estas variables mediante gráficas. Luego, crearé un mapa de calor para visualizar la correlación entre ellas. Este análisis nos permitirá entender si existe una relación significativa como se plantea en la hipótesis.
+
+```{r}
+#Si estas liberías ya están cargadas ya no pongas este bloque
+if (!require("ggplot2")) {
+  install.packages("ggplot2")
+}
+
+if (!require("corrplot")) {
+  install.packages("corrplot")
+}
+
+library(ggplot2)
+library(corrplot)
+```
+
+
+```{r}
+# Ruta especificada (esto ya no es necesario que lo pongas si ya tienes cargado el dataset)
+df <- read.csv('D:/Documentos/Bedu/R/Proyecto/ObesityDataSet.csv')
+
+# Verificar que el conjunto de datos se ha cargado correctamente
+head(df)
+
+
+# Gráfico de la distribución de CH2O
+ggplot(df, aes(x = CH2O)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black") +
+  ggtitle("Distribución de Consumo de Agua Diario (CH2O)")
+```
+```{r}
+# Crear un mapa de calor para las correlaciones
+# Columnas de interés
+data_correlation <- df[, c("CH2O", "TUE", "NObeyesdad")]
+
+# Calcular la matriz de correlación
+correlation_matrix <- cor(data_correlation, use = "complete.obs")
+
+# Crear el mapa de calor
+corrplot(correlation_matrix, method = "circle")
+```
+```{r}
+# Gráfico de la distribución de TUE
+ggplot(df, aes(x = TUE)) +
+  geom_histogram(bins = 30, fill = "green", color = "black") +
+  ggtitle("Distribución de Tiempo de Uso de Tecnología (TUE)")
+```
+```{r}
+# Gráfico de la distribución de NObeyesdad
+ggplot(df, aes(x = factor(NObeyesdad))) +
+  geom_bar(fill = "red", color = "black") +
+  ggtitle("Distribución de Nivel de Obesidad (NObeyesdad)")
+```
+**Conclusión sobre la hipótesis:**
+
+Existe una correlación estadísticamente significativa entre el consumo diario de agua y el nivel de obesidad, así como entre el uso de tecnología y el nivel de obesidad. Sin embargo, la dirección de la relación es positiva para CH2O y negativa para TUE, lo cual puede parecer contraintuitivo, especialmente para TUE. Además, el bajo valor de R-squared sugiere que muchas otras variables no incluidas en el modelo también afectan el nivel de obesidad, y que la fuerza de la relación es relativamente débil. La correlación entre estas dos variables es débil. Por otro lado, hay indicios de una correlación moderada entre el uso de tecnología y el nivel de obesidad.

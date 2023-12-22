@@ -1,0 +1,82 @@
+---
+title: "Implementación de arboles de decisión en nuestro conjunto de datos"
+output: html_notebook
+---
+
+## Implementación de arboloes de decisión para clasificar a las personas según su nivel de peso
+
+```{r}
+#cargamos el nuevo dataset ya con variables solo numéricas
+df <- read.csv("D:/Documentos/Bedu/R/Proyecto/ObesityDataSet.csv")
+View(df)
+```
+
+**Cargamos las librerías**
+
+```{r}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(ggplot2)
+```
+
+
+Separaremos nuestros datos en entrenamiento y prueba
+
+
+```{r}
+
+set.seed(45)
+
+# Crear índices para dividir los datos
+indices <- createDataPartition(df$NObeyesdad, p = 0.75, list = FALSE)
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+datos_entrenamiento <- df[indices, ]
+datos_prueba <- df[-indices, ]
+```
+
+
+Contruyendo el modelo
+```{r}
+# Construir el modelo
+modelo_arbol <- rpart(NObeyesdad ~ ., data = datos_entrenamiento, method = "class")
+```
+
+Visualización del arbol
+```{r}
+rpart.plot(modelo_arbol, main = "Árbol de Decisión para clasificación de Obesidad")
+```
+
+
+Las predicciones se hacen con la partición de datos de prueba
+```{r}
+# Hacer predicciones en el conjunto de prueba
+datos_prueba$predicciones <- predict(modelo_arbol, datos_prueba, type = "class")
+```
+
+
+Evaluamos el modelo
+```{r}
+# Crear la matriz de confusión
+matriz_confusion <- confusionMatrix(datos_prueba$predicciones, as.factor(datos_prueba$NObeyesdad))
+print(matriz_confusion)
+
+```
+Como se puede observar el modelo de arboles de decisión, tiene una precisión bastante buena, lo que quiere decir que clasifica a las personas según su grado de obesidad de forma muy certera.
+
+Para ver lo bien que se comporta el modelo, creamos un mapa de calor con los valores predichos correctamente y para ver en qué clasificaciones falló. (Matriz de confusión)
+```{r}
+plt <- as.data.frame(matriz_confusion$table)
+plt$Reference <- factor(plt$Reference, levels = rev(levels(plt$Reference)))
+
+
+
+ggplot(plt, aes(Prediction, Reference, fill = Freq)) +
+geom_tile() + geom_text(aes(label = Freq)) +
+scale_fill_gradient(low = "#DCD4F9", high = "#4B3F72") +
+labs(x = "Predicción", y = "Valor real") +
+scale_x_discrete(labels = c("Class_1", "Class_2", "Class_3", "Class_4", "Class_5", "Class_6", "Class_7")) +
+scale_y_discrete(labels = c("Class_7", "Class_6", "Class_5", "Class_4", "Class_3", "Class_2", "Class_1"))
+```
+Como se observa en la matriz de confusión, podemos ver que clasifica la gran mayoría de los valores de forma correcta, lo que nos da un modelo bastante preciso, ya que en los datos que falla, no hay gran dispersión respecto a las categprías reales.

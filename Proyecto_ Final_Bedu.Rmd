@@ -1,0 +1,636 @@
+---
+title: "Healthy Life: Análisis de datos e implementación de algoritmos de Machine Learning para la clasificación de pacientes de acuerdo a su grado de peso"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+## Presentación del dataset
+
+El dataset que fue ocupado en este proyecto es “Obesity based on eating habits & physical cond.” en el cual se recopilan datos en los que se describen hábitos y antecedentes de las personas y su clasificación de estado de obesidad.
+
+## Análisis de datos a nuestro dataset (Obesidad basada en habitos alimenticios y condición física)
+
+**Cargamos las librerías**
+```{r}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(ggplot2)
+library(corrplot)
+library(randomForest)
+```
+
+
+```{r}
+df <- read.csv("D:/Documentos/Bedu/R/Proyecto/ObesityDataSet_raw_and_data_sinthetic.csv")
+View(df)
+```
+Contar los nulos que hay en cada columna
+```{r}
+colSums(is.na(df))
+
+```
+
+Otener una vista general estadística de nuestro dataset
+```{r}
+summary(df)
+```
+
+### Análisis de la distribución en nuestras variables numéricas
+```{r}
+#Age
+ggplot(df, aes(x = Age)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Distribución de Edad")
+```
+
+Podemos llegar a la conclusión de que nuestra población es joven en su mayoría millenials y gen z
+
+```{r}
+#Height
+ggplot(df, aes(x = Height)) + 
+geom_histogram(binwidth = 0.1, fill = "purple", color = "black") + 
+labs(title = "Distribución de Altura")
+```
+
+```{r}
+#Weight
+ggplot(df, aes(x = Weight)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Distribución de peso")
+```
+
+En este histograma vemos que hay una distribución mucho más dispersa. Veamos su STD
+```{r}
+sd(df$Weight)
+```
+
+
+```{r}
+#FCVC (Frequency of consumption of vegetables)
+ggplot(df, aes(x = FCVC)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Frecuencia del consumo de vegetales")
+```
+
+```{r}
+#NCP (Number of main meals)
+ggplot(df, aes(x = NCP)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Numero de comidas principales")
+```
+
+
+```{r}
+#CH2O (Consumption of water daily):
+ggplot(df, aes(x = CH2O)) + 
+geom_histogram(binwidth = 0.1, fill = "purple", color = "black") + 
+labs(title = "Consumo de agua diariamente")
+```
+
+```{r}
+#FAF (Physical activity frequency):
+ggplot(df, aes(x = FAF)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Frecuencia de actividad física")
+```
+
+```{r}
+#TUE (Time using technology devices)
+ggplot(df, aes(x = TUE)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Tiempo usando dispositivos tecnológicos")
+```
+
+**Conclusiones y hallazgos de nuestras variables numéricas**
+
+* En general nuestro dataset tiene una población joven con una media de 24 años y una mediana de 22, podemos decir que los pacientes se concentran en pacientes Millenials y gen z.
+
+* La altura de nuestros individuos en bastante "promedio" respecto a la población mundial, además es curioso que la media y mediana estén sobre los 1.70mts (1.700 y 1.702) comportandose un poco como población normal. Cabe mencionar que ningún paciente pasa los dos metros de altura.
+
+* El peso es la variable que más dispersa está, ya que va desde los 39kg hasta los 173kg. Teniendo un comportamiento en el histograma de diferentes picos, teniendo la mediana en 83KG pero la frecuencia y distribución bien repartida.
+
+* El consumo de vegetales en nuestra población se mantiene más en las personas que sí consumen vegetales, algo curioso es que todos los individuos consumen vegetales al menos una vez.
+
+* Como era de esperarse, la mayoría de personas tienen 3 comidas al día, un comportamiento bastante común en la población occidental en general. Aunque resulta curioso que el segundo puesto lo ocupa las personas que solo comen una vez al día.
+
+* La distribución de la cantidad de agua que las personas consumen diariamente se encuentra sobre los 2 litros de agua.
+
+* En la periodicidad de actividad física la distribución si se inclina más a la izquierda, lo que nos indica que los individuos realizan poca o nula actividad física.
+
+* Es curioso ver como en una población joven el uso de dispositivos electrónicos es muy bajo en su mayoría e incluso nula.
+
+### Análisis de las variables categóricas
+```{r}
+ggplot(df, aes(x = family_history_with_overweight)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Frecuencia de Historial Familiar con Sobrepeso", x = "Historial Familiar de Sobrepeso", y = "Frecuencia")
+```
+
+```{r}
+#FAVC (Frequent consumption of high-caloric food)
+ggplot(df, aes(x = FAVC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Frecuencia en elconsumo de alimentos altos en calorías", x = "consumo alto en calorias", y = "Frecuencia")
+```
+
+```{r}
+# CAEC (Consumption of food between meals)
+ggplot(df, aes(x = CAEC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Frecuencia de consumo de alimentos entre comidas", x = "consumo entre comidas", y = "Frecuencia")
+```
+
+```{r}
+#SMOKE: Si fuma
+ggplot(df, aes(x = SMOKE)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Fumadores", x = "El paciente es fumador", y = "Frecuencia")
+```
+
+```{r}
+table(df$SMOKE)
+```
+
+
+```{r}
+#SCC (Caloric beverages consumption)
+ggplot(df, aes(x = SCC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Consumo de bebidas calóricas", x = "El paciente consume bebidas calóricas", y = "Frecuencia")
+```
+
+
+```{r}
+#CALC (Consumption of alcohol)
+ggplot(df, aes(x = CALC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Consumo de bebidas alcoholicas", x = "El paciente consume bebidas alcoholicas", y = "Frecuencia")
+```
+
+```{r}
+#MTRANS (Mode of transportation)
+ggplot(df, aes(x = MTRANS)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Medio de transporte", x = "Medio de transporte", y = "Frecuencia")
+```
+
+```{r}
+table(df$MTRANS)
+```
+
+```{r}
+#NObeyesdad (Obesity level)
+ggplot(df, aes(x = NObeyesdad)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Nivel de obesidad", x = "Nivel de obesidad del individuo", y = "Frecuencia")+
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))  # Rota las etiquetas verticalmente
+```
+
+```{r}
+table(df$NObeyesdad)
+```
+**Conclusiones y hallazgos de nuestras variables categóricas**
+
+* La mayoría de los individuos en el dataset, tienen historial familiar de personas con sobre peso u obesidad.
+
+* La mayoría de pacientes si consumen alimentos altos en calorías ferecuentemente.
+
+* Las personas consumen algo entre comidas, al menos una vez, ya que la mayoría se encuentra en el grupo de "sometimes".
+
+* En nuestro conjunto de datos predominan las personas que no fuman, ya que solo 44 de los individuos son fumadores.
+
+* Al contrario del consumo de comidas altas en calorías, los individuos en su mayoría no consumen bebidas calóricas.
+
+* El consumo de alcohól es algo que está presente, pero no de forma periodica, al tratarse de una población joven es un comportamiento esperado.
+
+* El medio de transporte de las personas en su mayoría es el transporte público, el que menos es la bicileta, habiendo solo 7 personas que la usan para trasladarse.
+
+* La distribución de "nivel de sobrepeso" en nuestra población es bastante uniforme, sin embargo, destacan un poco más las personas con obesidad tipo 1 y tipo 3, lo cual nos puede llevar a una primera hipótesis, la cual es la alta correlación de las comidas altas en calorías con el incremento de peso.
+
+
+### Una vez que conocemos los datos podemos empezar la limpieza y reestructuración de los mismos:
+```{r}
+base <- df
+dim(base)
+View(base)
+num_na<- complete.cases(base)
+sum(num_na)
+```
+Como podemos ver no existe valores NAs, por lo que procedemos a ver sí existen anomalías en las respuestas y en caso de no tenerlas procederemos a cambiar las variables categóricas a variables numéricas, para hacer el análisis.
+
+```{r}
+unique(base$Gender)
+for(i in 1:2111){
+  if(base$Gender[i]=='Female'){
+    base$Gender[i]<-1
+  }else{
+    base$Gender[i]<-2
+  }
+}
+
+range(base$Age)
+
+range(base$Height)
+
+range(base$Weight)
+
+unique(base$family_history_with_overweight)
+for(i in 1:2111){
+  if(base$family_history_with_overweight[i]=='yes'){
+    base$family_history_with_overweight[i]<-TRUE
+  }else{
+    base$family_history_with_overweight[i]<-FALSE
+  }
+}
+
+
+unique(base$FAVC)
+for(i in 1:2111){
+  if(base$FAVC[i]=='yes'){
+    base$FAVC[i]<-TRUE
+  }else{
+    base$FAVC[i]<-FALSE
+  }
+}
+
+range(base$FCVC)
+
+range(base$NCP)
+
+unique(base$CAEC)
+for(i in 1:2111){
+  if(base$CAEC[i]=='no'){
+    base$CAEC[i]<-0
+  }else if(base$CAEC[i]=='Sometimes'){
+    base$CAEC[i]<-1
+  }else if(base$CAEC[i]=='Frequently'){
+    base$CAEC[i]<-2
+  }else if(base$CAEC[i]=='Always'){
+    base$CAEC[i]<-3
+  }
+}
+
+
+unique(base$SCC)
+for(i in 1:2111){
+  if(base$SCC[i]=='yes'){
+    base$SCC[i]<-TRUE
+  }else{
+    base$SCC[i]<-FALSE
+  }
+}
+
+
+unique(base$SMOKE)
+for(i in 1:2111){
+  if(base$SMOKE[i]=='yes'){
+    base$SMOKE[i]<-TRUE
+  }else{
+    base$SMOKE[i]<-FALSE
+  }
+}
+
+range(base$CH2O)
+
+range(base$FAF)
+
+range(base$TUE)
+
+unique(base$CALC)
+for(i in 1:2111){
+  if(base$CALC[i]=='no'){
+    base$CALC[i]<-0
+  }else if(base$CALC[i]=='Sometimes'){
+    base$CALC[i]<-1
+  }else if(base$CALC[i]=='Frequently'){
+    base$CALC[i]<-2
+  }else if(base$CALC[i]=='Always'){
+    base$CALC[i]<-3
+  }
+}
+
+unique(base$MTRANS)
+for(i in 1:2111){
+  if(base$MTRANS[i]=='Automobile'){
+    base$MTRANS[i]<-1
+  }else if(base$MTRANS[i]=='Motorbike'){
+    base$MTRANS[i]<-2
+  }else if(base$MTRANS[i]=='Public_Transportation'){
+    base$MTRANS[i]<-3
+  }else if(base$MTRANS[i]=='Bike'){
+    base$MTRANS[i]<-4
+  }else if(base$MTRANS[i]=='Walking'){
+    base$MTRANS[i]<-5
+  }
+}
+
+unique(base$NObeyesdad)
+
+for(i in 1:2111){
+  if(base$NObeyesdad[i]=='Insufficient_Weight'){
+    base$NObeyesdad[i]<-1
+  }else if(base$NObeyesdad[i]=='Normal_Weight'){
+    base$NObeyesdad[i]<-2
+  }else if(base$NObeyesdad[i]=='Overweight_Level_I'){
+    base$NObeyesdad[i]<-3
+  }else if(base$NObeyesdad[i]=='Overweight_Level_II'){
+    base$NObeyesdad[i]<-4
+  }else if(base$NObeyesdad[i]=='Obesity_Type_I'){
+    base$NObeyesdad[i]<-5
+  }else if(base$NObeyesdad[i]=='Obesity_Type_II'){
+    base$NObeyesdad[i]<-6
+  }else if(base$NObeyesdad[i]=='Obesity_Type_III'){
+    base$NObeyesdad[i]<-7
+  }
+}
+```
+Calculamos el IMC para tener una variable numérica continua con la cuál poder hacer los cálculos. Sabemos que el IMC se calcula de la siguiente manera: $\frac{peso}{estatura^2}$. Eliminamos las columnas peso y estatura ya que no son necesarias.
+```{r}
+IMC<-numeric()
+for(i in 1:2111){
+  IMC[i]<-(base$Weight[i])/((base$Height[i])^2)
+}
+df<-cbind(base,IMC)
+
+
+
+base_clean<-subset( df, select = -c(Height, Weight))
+View(base_clean)
+
+#write.csv(base_clean, "D:/Documentos/Bedu/R/Proyecto/ObesityDataSet_raw_and_data_sinthetic.csv", row.names=FALSE)
+```
+
+Hipótesis inicial: Es posible predecir en qué categoría de obesidad se encuentra una persona dependiendo de los siguientes hábitos e historial:
+
+1. Género
+
+2. Edad
+
+3. Frecuencia en el consumo de vegetables (FCVC)
+
+4. Número de comidas principales (NCP)
+
+5. Consumo de agua diariamente (CH20)
+
+6. Frecuencia de Actividad Física (FAF)
+
+7. Frecuencia en el consumo de alimentos altos en calorías (FAVC)
+
+8. Tiempo usando dispositivos tecnológicos (TUE)
+
+9. Historial Familiar con sobrepeso (family_history_with_overweight)
+
+10. Frecuencia de consumo de alimentos entre comidas (CAEC)
+
+11. Si es fumador (SMOKE)
+
+12. Consumo de bebidas calóricas (SCC)
+
+13. Consumo de bebidas alcohólicas (CALC)
+
+14. Cuál es el medio de trasporte que ocupan (MTRANS)
+
+
+## Análisis de la correlación de los datos
+Para nuestra primera tabla y gráfica ocuparemos todas las variables disponibles para hacer una matriz de correlación.
+
+```{r}
+base <- read.csv("D:/Documentos/Bedu/R/Proyecto/ObesityDataSet.csv")
+n_tr<-list("Genero", "Edad", "Historial_Familiar", "FAVC", "FCVC", "NCP", "CAEC", "FUMADOR", "C_AGUA", "SCC", "FAF", "TUE", "CALC", "MTRANS", "OBES", "IMC")
+colnames(base)<-n_tr
+
+base.cor = cor(base)
+View(base.cor)
+corrplot(base.cor)
+```
+De momento podemos observar que no existe verdadera correlación entre algunas variables, sin embargo, podemos ver que existe una correlación medianamente significativa entre el IMC y algunas de las variables. 
+Antes de cualquier cambio, haremos una regresión lineal múltiple para ver el resultado con todas las variables.
+
+```{r}
+base <- read.csv("D:/Documentos/Bedu/R/Proyecto/ObesityDataSet.csv")
+modelo<-lm(base$IMC~base$Gender+base$Age+base$family_history_with_overweight+base$FAVC+base$FCVC+base$NCP+
+             base$CAEC+base$SMOKE+base$CH2O+base$SCC+base$TUE+base$CALC+base$MTRANS)
+#hist(residuals(modelo), main= "Histograma de residuales",xlab = "Residuales", ylab="frecuencia")
+summary(modelo)
+```
+Como podemos observar el P-value es menor que el 0.05 que es el nivel de significancia común en los modelos de regresión, esto nos indica que el modelo funciona para predecir el comportamiento de los datos. Sin embargo, el R-cuadrado nos indica que el modelo está explicando en un 43.81% la variabilidad de los datos, por lo cual no es muy modelo muy acertado.
+
+## Análisis de variables por separado
+
+Empezaremos a hacer divisiones entre las variables para determinar qué modelo es el mejor para comprender nuestros datos.
+
+**Hipótesis**: Existe una correlación significativa entre el consumo diario de agua (CH2O) y el uso de tecnología (TUE) con el nivel de obesidad (NObeyesdad) de los individuos.
+
+Para probar esta hipótesis, realizaré un análisis utilizando el lenguaje R, enfocándome en estas variables y creando gráficas y un mapa de calor para visualizar las correlaciones. Comenzaré cargando y examinando el conjunto de datos.
+
+El conjunto de datos contiene varias columnas, incluyendo las de interés para nuestra hipótesis: 'CH2O' (consumo de agua diario), 'TUE' (tiempo de uso de tecnología), y 'NObeyesdad' (nivel de obesidad). Además, observo una columna 'IMC', que podría ser relevante para análisis adicionales.
+
+Procederé a realizar el análisis en R. Primero, exploraré la distribución de estas variables mediante gráficas. Luego, crearé un mapa de calor para visualizar la correlación entre ellas. Este análisis nos permitirá entender si existe una relación significativa como se plantea en la hipótesis.
+
+```{r}
+df <- base
+ggplot(df, aes(x = CH2O)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black") +
+  ggtitle("Distribución de Consumo de Agua Diario (CH2O)")
+```
+
+```{r}
+# Crear un mapa de calor para las correlaciones
+# Columnas de interés
+data_correlation <- df[, c("CH2O", "TUE", "NObeyesdad")]
+
+# Calcular la matriz de correlación
+correlation_matrix <- cor(data_correlation, use = "complete.obs")
+
+# Crear el mapa de calor
+corrplot(correlation_matrix, method = "circle")
+```
+
+```{r}
+# Gráfico de la distribución de TUE
+ggplot(df, aes(x = TUE)) +
+  geom_histogram(bins = 30, fill = "green", color = "black") +
+  ggtitle("Distribución de Tiempo de Uso de Tecnología (TUE)")
+```
+```{r}
+# Gráfico de la distribución de NObeyesdad
+ggplot(df, aes(x = factor(NObeyesdad))) +
+  geom_bar(fill = "red", color = "black") +
+  ggtitle("Distribución de Nivel de Obesidad (NObeyesdad)")
+```
+**Conclusión sobre la hipótesis:**
+
+Existe una correlación estadísticamente significativa entre el consumo diario de agua y el nivel de obesidad, así como entre el uso de tecnología y el nivel de obesidad. Sin embargo, la dirección de la relación es positiva para CH2O y negativa para TUE, lo cual puede parecer contraintuitivo, especialmente para TUE. Además, el bajo valor de R-squared sugiere que muchas otras variables no incluidas en el modelo también afectan el nivel de obesidad, y que la fuerza de la relación es relativamente débil. La correlación entre estas dos variables es débil. Por otro lado, hay indicios de una correlación moderada entre el uso de tecnología y el nivel de obesidad.
+
+
+## Análisis de los datos por la matriz de correlación
+
+Ahora tomaremos las variables que nos salieron con una medianamente significativa correlación con nuestra variable independiente. Las cuales son las siguientes:
+
+1. Edad
+
+2. Historial familiar
+
+3. Frecuencia en el consumo de alimentos altos en calorías
+
+4. Frecuencia en el consumo de vegetables
+
+5. Frecuencia de consumo de alimentos entre comidas 
+
+
+```{r}
+ind<-subset( base, select = c(Age,family_history_with_overweight,FAVC,FCVC,CAEC,IMC))
+n_tr<-list("Edad", "Historial_Familiar", "FAVC", "FCVC", "CAEC","IMC")
+colnames(ind)<-n_tr
+corind<-cor(ind)
+corrplot(corind)
+
+```
+Iniciaremos haciendo el modelo de regresión lineal multiple.
+Como podemos ver el p-value sigue siendo bajo, sin embargo, nuestro R-cuadrada es aún más baja, lo que significa que no está explicando de manera muy concreta los datos.
+Con lo que este tampoco es muy buen modelo
+
+```{r}
+modelo2<-lm(ind$IMC~ind$Edad+ind$Historial_Familiar+ind$FAVC+ind$FCVC+ind$CAEC)
+#hist(residuals(modelo2), main= "Histograma de residuales",xlab = "Residuales", ylab="frecuencia")
+summary(modelo2)
+```
+Como se puede observar en el resumen de los resultados de la regresión lineal, el número de colaciones
+entre comidas tiene significancia en el nivel de IMC. Se puede apreciar que existe una relación inversamente
+proporcional, pues si se consumen colaciones con mayor frecuencia, el IMC tiende a ser 3.421 veces menor a
+que si el consumo de colaciones es poco frecuente.
+La regresión llevada a cabo, permite observar cuáles medios de transporte son los que mostraron una mayor
+influencia en el IMC, en la tabla de resultados se aprecia que el uso de bicicleta no resultó estadísticamente
+significativo para la variable dependiente, contrario al uso de transporte público.
+
+Los resultados anteriores podrían estar relacionados con el comportamiento de la muestra del dataset.
+
+Sin embargo, aún especificando las variables que tienen una mayor correlación, los resultados no son buenos, esto es porque nuestros datos tienen muchas variables binarias (respuestas de SI o NO). Lo que nos hace pensar que un mejor modelo sería un calsificador.
+
+## Implementación de arboloes de decisión para clasificar a las personas según su nivel de peso
+
+Separaremos nuestros datos en entrenamiento y prueba
+```{r}
+set.seed(45)
+
+# Crear índices para dividir los datos
+indices <- createDataPartition(df$NObeyesdad, p = 0.75, list = FALSE)
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+datos_entrenamiento <- df[indices, ]
+datos_prueba <- df[-indices, ]
+```
+
+Construyendo el modelo
+```{r}
+modelo_arbol <- rpart(NObeyesdad ~ ., data = datos_entrenamiento, method = "class")
+```
+
+Visualización del arbol
+```{r}
+rpart.plot(modelo_arbol, main = "Árbol de Decisión para clasificación de Obesidad")
+```
+
+Las predicciones se hacen con la partición de datos de prueba
+```{r}
+datos_prueba$predicciones <- predict(modelo_arbol, datos_prueba, type = "class")
+```
+
+Evaluamos el modelo
+```{r}
+matriz_confusion <- confusionMatrix(datos_prueba$predicciones, as.factor(datos_prueba$NObeyesdad))
+print(matriz_confusion)
+```
+Como se puede observar el modelo de arboles de decisión, tiene una precisión bastante buena, lo que quiere decir que clasifica a las personas según su grado de obesidad de forma muy certera (un 96.3%).
+
+Para ver lo bien que se comporta el modelo, creamos un mapa de calor con los valores predichos correctamente y para ver en qué clasificaciones falló. (Matriz de confusión)
+
+```{r}
+plt <- as.data.frame(matriz_confusion$table)
+plt$Reference <- factor(plt$Reference, levels = rev(levels(plt$Reference)))
+
+
+
+ggplot(plt, aes(Prediction, Reference, fill = Freq)) +
+geom_tile() + geom_text(aes(label = Freq)) +
+scale_fill_gradient(low = "#DCD4F9", high = "#4B3F72") +
+labs(x = "Predicción", y = "Valor real") +
+scale_x_discrete(labels = c("Class_1", "Class_2", "Class_3", "Class_4", "Class_5", "Class_6", "Class_7")) +
+scale_y_discrete(labels = c("Class_7", "Class_6", "Class_5", "Class_4", "Class_3", "Class_2", "Class_1"))
+```
+Como se observa en la matriz de confusión, podemos ver que clasifica la gran mayoría de los valores de forma correcta, lo que nos da un modelo bastante preciso, ya que en los datos que falla, no hay gran dispersión respecto a las categprías reales.
+
+
+## Implementación de Ramdom Forest para clasificar a las personas según su nivel de peso
+
+**Hipotesis:**
+Se utilizara el modelo de Machine Leaning Random Forest porque es un modelo de aprendizaje
+automático más robusto que los arboles de decisión, para manejar datos con multiples variables lo cual es 
+importante para el conjunto de datos con el que trabajamos.
+
+En este caso el modelo tiene que clasificar el grado de obsesidad teniendo como variable
+independiente la variable "IMC". Random Forest es una buena opción para este tipo de problemas
+porque puede aprender la relación de las variables independientes y las variables dependientes
+utilizando un conjunto de árboles de decisión.
+
+La utilización de IMC como la variable independiente se debe a que el IMC es una medida 
+ampliamente utilizada para evaluar el estado de obesidad de una persona por eso y por la
+alta correlación que tiene esta variable es por lo que se decidió utilizarla como variable
+independiente.
+
+Separaremos nuestros datos en entrenamiento y prueba
+```{r}
+data <- df
+data$NObeyesdad <- as.factor(data$NObeyesdad)
+
+set.seed(45)
+
+split <- createDataPartition(data$NObeyesdad, p = 0.75, list = FALSE)
+train <- data[split,]
+test <- data[-split,]
+```
+
+Crear el modelo Random Forest
+```{r}
+model <- randomForest(NObeyesdad ~ ., data = train, ntree = 500)
+```
+
+Evaluar el modelo
+```{r}
+pred <- predict(model, test, type = "class")
+confusionMatrix(pred, test$NObeyesdad)
+```
+Podemos observar que al utilizar el modelo Random Forest, y tomando como 
+variable independiente a IMC nos da como resultado una presición muy alta.
+El IMC es un factor importante para clasificar el nivel de obesidad. El modelo
+Random Forest obtuvo un Accuracy de 0.982, lo cual significa que es capaz de 
+clasificar correctamente el nivel de obesidad de 98.2% de las personas. 
+
+El resultado de este modelo es bastante confiable para identificar a las personas que podrían beneficiarse de intervenciones para prevenir la obesidad.
+
+Para ver lo bien que se comporta el modelo, creamos un mapa de calor con los valores predichos correctamente y para ver en qué clasificaciones falló. (Matriz de confusión)
+
+**Heat Map**
+```{r}
+matriz_confusion <- confusionMatrix(pred, test$NObeyesdad)
+plt <- as.data.frame(matriz_confusion$table)
+plt$Reference <- factor(plt$Reference, levels = rev(levels(plt$Reference)))
+
+ggplot(plt, aes(Prediction, Reference, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq)) +
+  scale_fill_gradient(low = "#DCD4F9", high = "#4B3F72") +
+  labs(x = "Predicción", y = "Valor real") +
+  scale_x_discrete(labels = c("Class_1", "Class_2", "Class_3", "Class_4", "Class_5", "Class_6", "Class_7")) +
+  scale_y_discrete(labels = c("Class_7", "Class_6", "Class_5", "Class_4", "Class_3", "Class_2", "Class_1"))
+```
+En general, el mapa de calor indica que el modelo Random Forest es una herramienta útil para clasificar el nivel de obesidad de nuestro conjunto de datos, pero que se debe tener en cuenta que el modelo a pesar de tener un accuracy muy bueno no es perfecto y puede tener un ligero sesgo que puede que cometer errores.
+
+## Conclusión
+A lo largo de este proyecto, hemos explorado y analizado en profundidad un conjunto de datos centrado en la obesidad, evaluando diversos aspectos como hábitos alimenticios, condiciones físicas y antecedentes familiares. A través de un enfoque práctico, hemos aplicado técnicas de análisis exploratorio de datos en R, identificando la presencia de nulos, visualizando distribuciones y tendencias en las variables clave, y realizando estadísticas descriptivas para obtener una comprensión completa del conjunto de datos.
+
+Al avanzar en el proyecto, hemos implementado varios modelos de aprendizaje automático, incluyendo regresión lineal múltiple, árboles de decisión y el poderoso Random Forest. Al evaluar la eficacia de estos modelos, observamos un rendimiento excepcional con Random Forest, alcanzando una precisión del 98% en la clasificación de niveles de obesidad. Este resultado destacado sugiere que el modelo es altamente capaz de discernir patrones complejos en los datos y proporciona una herramienta robusta para la clasificación precisa de individuos en categorías específicas de obesidad.
+
+En resumen, este proyecto no solo ha demostrado la utilidad de las técnicas de análisis de datos y aprendizaje automático en la comprensión de problemas de salud como la obesidad, sino que también ha evidenciado la eficacia de implementar modelos avanzados como Random Forest para lograr resultados altamente precisos en la clasificación. Estos hallazgos tienen el potencial de contribuir significativamente a la identificación temprana y la gestión efectiva de la obesidad, ofreciendo perspectivas valiosas para futuras investigaciones y aplicaciones prácticas en el ámbito de la salud pública.

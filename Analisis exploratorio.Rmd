@@ -1,0 +1,182 @@
+---
+title: "Proyecto Final BEDU"
+output: html_notebook
+---
+
+## Análisis de datos a nuestro dataset (Obesidad basada en habitos alimenticios y condición física)
+
+```{r}
+df <- read.csv("D:/Documentos/Bedu/R/Proyecto/ObesityDataSet_raw_and_data_sinthetic.csv")
+View(df)
+```
+Contar los nulos que hay en cada columna
+```{r}
+colSums(is.na(df))
+
+```
+```{r}
+summary(df)
+```
+### Análisis de la distribución en nuestras variables numéricas
+```{r}
+#Age
+library(ggplot2)
+ggplot(df, aes(x = Age)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Distribución de Edad")
+```
+
+Podemos llegar a la conclusión de que nuestra población es joven en su mayoría millenials y gen z
+
+```{r}
+#Height
+library(ggplot2)
+ggplot(df, aes(x = Height)) + 
+geom_histogram(binwidth = 0.1, fill = "purple", color = "black") + 
+labs(title = "Distribución de Altura")
+```
+
+```{r}
+#Weight
+library(ggplot2)
+ggplot(df, aes(x = Weight)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Distribución de peso")
+```
+
+En este histograma vemos que hay una distribución mucho más dispersa. Veamos su STD
+```{r}
+sd(df$Weight)
+```
+```{r}
+#FCVC (Frequency of consumption of vegetables)
+ggplot(df, aes(x = FCVC)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Frecuencia del consumo de vegetales")
+```
+
+```{r}
+#NCP (Number of main meals)
+ggplot(df, aes(x = NCP)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Numero de comidas principales")
+```
+```{r}
+#CH2O (Consumption of water daily):
+ggplot(df, aes(x = CH2O)) + 
+geom_histogram(binwidth = 0.1, fill = "purple", color = "black") + 
+labs(title = "Consumo de agua diariamente")
+```
+
+```{r}
+#FAF (Physical activity frequency):
+ggplot(df, aes(x = FAF)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Frecuencia de actividad física")
+```
+
+```{r}
+#TUE (Time using technology devices)
+ggplot(df, aes(x = TUE)) + 
+geom_histogram(binwidth = 1, fill = "purple", color = "black") + 
+labs(title = "Tiempo usando dispositivos tecnológicos")
+```
+
+**Conclusiones y hallazgos de nuestras variables numéricas**
+
+* En general nuestro dataset tiene una población joven con una media de 24 años y una mediana de 22, podemos decir que los pacientes se concentran en pacientes Millenials y gen z.
+
+* La altura de nuestros individuos en bastante "promedio" respecto a la población mundial, además es curioso que la media y mediana estén sobre los 1.70mts (1.700 y 1.702) comportandose un poco como población normal. Cabe mencionar que ningún paciente pasa los dos metros de altura.
+
+* El peso es la variable que más dispersa está, ya que va desde los 39kg hasta los 173kg. Teniendo un comportamiento en el histograma de diferentes picos, teniendo la mediana en 83KG pero la frecuencia y distribución bien repartida.
+
+* El consumo de vegetales en nuestra población se mantiene más en las personas que sí consumen vegetales, algo curioso es que todos los individuos consumen vegetales al menos una vez.
+
+* Como era de esperarse, la mayoría de personas tienen 3 comidas al día, un comportamiento bastante común en la población occidental en general. Aunque resulta curioso que el segundo puesto lo ocupa las personas que solo comen una vez al día.
+
+* La distribución de la cantidad de agua que las personas consumen diariamente se encuentra sobre los 2 litros de agua.
+
+* En la periodicidad de actividad física la distribución si se inclina más a la izquierda, lo que nos indica que los individuos realizan poca o nula actividad física.
+
+* Es curioso ver como en una población joven el uso de dispositivos electrónicos es muy bajo en su mayoría e incluso nula.
+
+### Análisis de las variables categóricas
+```{r}
+ggplot(df, aes(x = family_history_with_overweight)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Frecuencia de Historial Familiar con Sobrepeso", x = "Historial Familiar de Sobrepeso", y = "Frecuencia")
+```
+
+```{r}
+#FAVC (Frequent consumption of high-caloric food)
+ggplot(df, aes(x = FAVC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Frecuencia en elconsumo de alimentos altos en calorías", x = "consumo alto en calorias", y = "Frecuencia")
+```
+
+```{r}
+# CAEC (Consumption of food between meals)
+ggplot(df, aes(x = CAEC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Frecuencia de consumo de alimentos entre comidas", x = "consumo entre comidas", y = "Frecuencia")
+```
+
+```{r}
+#SMOKE: Si fuma
+ggplot(df, aes(x = SMOKE)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Fumadores", x = "El paciente es fumador", y = "Frecuencia")
+```
+```{r}
+table(df$SMOKE)
+```
+```{r}
+#SCC (Caloric beverages consumption)
+ggplot(df, aes(x = SCC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Consumo de bebidas calóricas", x = "El paciente consume bebidas calóricas", y = "Frecuencia")
+```
+```{r}
+#CALC (Consumption of alcohol)
+ggplot(df, aes(x = CALC)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Consumo de bebidas alcoholicas", x = "El paciente consume bebidas alcoholicas", y = "Frecuencia")
+```
+```{r}
+#MTRANS (Mode of transportation)
+ggplot(df, aes(x = MTRANS)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Medio de transporte", x = "Medio de transporte", y = "Frecuencia")
+```
+```{r}
+table(df$MTRANS)
+```
+
+```{r}
+#NObeyesdad (Obesity level)
+ggplot(df, aes(x = NObeyesdad)) +
+geom_bar(fill = "skyblue", color = "black") +
+labs(title = "Nivel de obesidad", x = "Nivel de obesidad del individuo", y = "Frecuencia")+
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))  # Rota las etiquetas verticalmente
+```
+```{r}
+table(df$NObeyesdad)
+```
+**Conclusiones y hallazgos de nuestras variables categóricas**
+
+* La mayoría de los individuos en el dataset, tienen historial familiar de personas con sobre peso u obesidad.
+
+* La mayoría de pacientes si consumen alimentos altos en calorías ferecuentemente.
+
+* Las personas consumen algo entre comidas, al menos una vez, ya que la mayoría se encuentra en el grupo de "sometimes".
+
+* En nuestro conjunto de datos predominan las personas que no fuman, ya que solo 44 de los individuos son fumadores.
+
+* Al contrario del consumo de comidas altas en calorías, los individuos en su mayoría no consumen bebidas calóricas.
+
+* El consumo de alcohól es algo que está presente, pero no de forma periodica, al tratarse de una población joven es un comportamiento esperado.
+
+* El medio de transporte de las personas en su mayoría es el transporte público, el que menos es la bicileta, habiendo solo 7 personas que la usan para trasladarse.
+
+* La distribución de "nivel de sobrepeso" en nuestra población es bastante uniforme, sin embargo, destacan un poco más las personas con obesidad tipo 1 y tipo 3, lo cual nos puede llevar a una primera hipótesis, la cual es la alta correlación de las comidas altas en calorías con el incremento de peso.
+
